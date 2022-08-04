@@ -10,7 +10,7 @@ use serde_json::value::{Map};
 
 use web3::types::U256;
 
-pub fn render_verification_key(vk: &VerificationKey<Bn256, PlonkCsWidth4WithNextStepParams>, render_to_path: &str) {
+pub fn render_verification_key(vk: &VerificationKey<Bn256, PlonkCsWidth4WithNextStepParams>, render_to_path: &str, template_path: &str) {
     let mut map = Map::new();
 
     let domain_size = vk.n.next_power_of_two().to_string();
@@ -63,7 +63,7 @@ pub fn render_verification_key(vk: &VerificationKey<Bn256, PlonkCsWidth4WithNext
     let mut handlebars = Handlebars::new();
 
     // register template from a file and assign a name to it
-    handlebars.register_template_file("contract", "./template.sol").expect("must read the template");
+    handlebars.register_template_file("contract", template_path).expect("must read the template");
 
     // make data and render it
     // println!("{}", handlebars.render("contract", &map).unwrap());
@@ -190,14 +190,15 @@ pub fn serialize_proof(proof: &Proof<Bn256, PlonkCsWidth4WithNextStepParams>) ->
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn render_key() {
-        let mut reader = std::io::BufReader::with_capacity(1<<24,
-            std::fs::File::open("./deposit_vk.key").unwrap()
-        );
-        let vk = VerificationKey::<Bn256, PlonkCsWidth4WithNextStepParams>::read(&mut reader).unwrap();
-        render_verification_key(&vk, "../Verifier.sol");
-    }
+
+    // #[test]
+    // fn render_key() {
+    //     let mut reader = std::io::BufReader::with_capacity(1<<24,
+    //         std::fs::File::open("./deposit_vk.key").unwrap()
+    //     );
+    //     let vk = VerificationKey::<Bn256, PlonkCsWidth4WithNextStepParams>::read(&mut reader).unwrap();
+    //     render_verification_key(&vk, "../Verifier.sol");
+    // }
 
     #[test]
     fn render_simple_deposit_key_and_proof() {
@@ -205,7 +206,7 @@ mod tests {
             std::fs::File::open("./deposit_vk.key").unwrap()
         );
         let vk = VerificationKey::<Bn256, PlonkCsWidth4WithNextStepParams>::read(&mut reader).unwrap();
-        render_verification_key(&vk, "./test.sol");
+        render_verification_key(&vk, "./test.sol", "./template.sol");
 
         let mut reader = std::io::BufReader::with_capacity(1<<24,
             std::fs::File::open("./deposit_proof.proof").unwrap()
@@ -229,35 +230,35 @@ mod tests {
         println!("[{}]", vec.join(","));
     }
 
-    #[test]
-    fn render_simple_xor_key_and_proof() {
-        let mut reader = std::io::BufReader::with_capacity(1<<24,
-            std::fs::File::open("./xor_vk.key").unwrap()
-        );
-        let vk = VerificationKey::<Bn256, PlonkCsWidth4WithNextStepParams>::read(&mut reader).unwrap();
-        render_verification_key(&vk, "./xor.sol");
+    // #[test]
+    // fn render_simple_xor_key_and_proof() {
+    //     let mut reader = std::io::BufReader::with_capacity(1<<24,
+    //         std::fs::File::open("./xor_vk.key").unwrap()
+    //     );
+    //     let vk = VerificationKey::<Bn256, PlonkCsWidth4WithNextStepParams>::read(&mut reader).unwrap();
+    //     render_verification_key(&vk, "./xor.sol");
 
-        let mut reader = std::io::BufReader::with_capacity(1<<24,
-            std::fs::File::open("./xor_proof.proof").unwrap()
-        );
-        let proof = Proof::<Bn256, PlonkCsWidth4WithNextStepParams>::read(&mut reader).unwrap();
-        let (inputs, proof) = serialize_proof(&proof);
+    //     let mut reader = std::io::BufReader::with_capacity(1<<24,
+    //         std::fs::File::open("./xor_proof.proof").unwrap()
+    //     );
+    //     let proof = Proof::<Bn256, PlonkCsWidth4WithNextStepParams>::read(&mut reader).unwrap();
+    //     let (inputs, proof) = serialize_proof(&proof);
 
-        println!("Inputs");
-        let mut vec = vec![];
-        for i in inputs.into_iter() {
-            vec.push(format!("\"{}\"", i));
-        }
-        println!("[{}]", vec.join(","));
+    //     println!("Inputs");
+    //     let mut vec = vec![];
+    //     for i in inputs.into_iter() {
+    //         vec.push(format!("\"{}\"", i));
+    //     }
+    //     println!("[{}]", vec.join(","));
 
-        println!("Proof");
-        let mut vec = vec![];
-        for i in proof.into_iter() {
-            vec.push(format!("\"{}\"", i));
-        }
+    //     println!("Proof");
+    //     let mut vec = vec![];
+    //     for i in proof.into_iter() {
+    //         vec.push(format!("\"{}\"", i));
+    //     }
 
-        println!("Proof len = {}", vec.len());
+    //     println!("Proof len = {}", vec.len());
 
-        println!("[{}]", vec.join(","));
-    }
+    //     println!("[{}]", vec.join(","));
+    // }
 }
