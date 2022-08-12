@@ -1,12 +1,13 @@
 [package]
-name = "bellman_vk_codegen"
+name = "bellman_vk_codegen_recursive"
 version = "0.1.0"
 authors = ["Alex Vlasov <alex.m.vlasov@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-bellman = { package = "bellman_ce", git = "https://github.com/hrmk1o3/bellman", branch = "dev" }
+# bellman = { package = "bellman_ce", git = "https://github.com/hrmk1o3/bellman", branch = "dev" }
 # bellman = { package = "bellman_ce", path = "../../bellman" }
+franklin-crypto = { git = "https://github.com/hrmk1o3/franklin-crypto", branch = "beta", features = ["multicore", "plonk"] }
 recursive_aggregation_circuit = {git = "https://github.com/hrmk1o3/recursive_aggregation_circuit"}
 # recursive_aggregation_circuit = {path = "../../recursive_aggregation_circuit"}
 

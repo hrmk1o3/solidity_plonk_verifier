@@ -1,16 +1,27 @@
-use bellman::pairing::ff::{PrimeField, PrimeFieldRepr};
-use bellman::pairing::{Engine, CurveAffine};
-use bellman::plonk::better_cs::keys::{VerificationKey, Proof};
-use bellman::pairing::bn256::{Bn256, Fr};
-use bellman::plonk::better_cs::cs::PlonkCsWidth4WithNextStepParams;
+use franklin_crypto::bellman::{
+    pairing::{
+        bn256::{Bn256, Fr},
+        ff::{PrimeField, PrimeFieldRepr},
+    },
+    plonk::{
+        better_cs::cs::PlonkCsWidth4WithNextStepParams,
+        better_cs::keys::{Proof, VerificationKey},
+        domains::Domain,
+    },
+    {CurveAffine, Engine},
+};
 
 use handlebars::*;
 
-use serde_json::value::{Map};
+use serde_json::value::Map;
 
 use web3::types::U256;
 
-pub fn render_verification_key(vk: &VerificationKey<Bn256, PlonkCsWidth4WithNextStepParams>, render_to_path: &str, template_path: &str) {
+pub fn render_verification_key(
+    vk: &VerificationKey<Bn256, PlonkCsWidth4WithNextStepParams>,
+    render_to_path: &str,
+    template_path: &str,
+) {
     let mut map = Map::new();
 
     let domain_size = vk.n.next_power_of_two().to_string();
@@ -19,7 +30,7 @@ pub fn render_verification_key(vk: &VerificationKey<Bn256, PlonkCsWidth4WithNext
     let num_inputs = vk.num_inputs.to_string();
     map.insert("num_inputs".to_owned(), to_json(num_inputs));
 
-    let domain = bellman::plonk::domains::Domain::<Fr>::new_for_size(vk.n.next_power_of_two() as u64).unwrap();
+    let domain = Domain::<Fr>::new_for_size(vk.n.next_power_of_two() as u64).unwrap();
     let omega = domain.generator;
     map.insert("omega".to_owned(), to_json(render_scalar_to_hex(&omega)));
 
@@ -27,7 +38,10 @@ pub fn render_verification_key(vk: &VerificationKey<Bn256, PlonkCsWidth4WithNext
         let rendered = render_g1_affine_to_hex::<Bn256>(&c);
 
         for j in 0..2 {
-            map.insert(format!("selector_commitment_{}_{}", i, j), to_json(&rendered[j]));
+            map.insert(
+                format!("selector_commitment_{}_{}", i, j),
+                to_json(&rendered[j]),
+            );
         }
     }
 
@@ -35,7 +49,10 @@ pub fn render_verification_key(vk: &VerificationKey<Bn256, PlonkCsWidth4WithNext
         let rendered = render_g1_affine_to_hex::<Bn256>(&c);
 
         for j in 0..2 {
-            map.insert(format!("next_step_selector_commitment_{}_{}", i, j), to_json(&rendered[j]));
+            map.insert(
+                format!("next_step_selector_commitment_{}_{}", i, j),
+                to_json(&rendered[j]),
+            );
         }
     }
 
@@ -43,7 +60,10 @@ pub fn render_verification_key(vk: &VerificationKey<Bn256, PlonkCsWidth4WithNext
         let rendered = render_g1_affine_to_hex::<Bn256>(&c);
 
         for j in 0..2 {
-            map.insert(format!("permutation_commitment_{}_{}", i, j), to_json(&rendered[j]));
+            map.insert(
+                format!("permutation_commitment_{}_{}", i, j),
+                to_json(&rendered[j]),
+            );
         }
     }
 
@@ -63,19 +83,22 @@ pub fn render_verification_key(vk: &VerificationKey<Bn256, PlonkCsWidth4WithNext
     let mut handlebars = Handlebars::new();
 
     // register template from a file and assign a name to it
-    handlebars.register_template_file("contract", template_path).expect("must read the template");
+    handlebars
+        .register_template_file("contract", template_path)
+        .expect("must read the template");
 
     // make data and render it
     // println!("{}", handlebars.render("contract", &map).unwrap());
 
-    let mut writer = std::io::BufWriter::with_capacity(1<<24,
-        std::fs::File::create(render_to_path).unwrap()
-    );
+    let mut writer =
+        std::io::BufWriter::with_capacity(1 << 24, std::fs::File::create(render_to_path).unwrap());
 
     let rendered = handlebars.render("contract", &map).unwrap();
 
     use std::io::Write;
-    writer.write(rendered.as_bytes()).expect("must write to file");
+    writer
+        .write(rendered.as_bytes())
+        .expect("must write to file");
 }
 
 fn render_scalar_to_hex<F: PrimeField>(el: &F) -> String {
@@ -97,7 +120,12 @@ fn render_g1_affine_to_hex<E: Engine>(point: &E::G1Affine) -> [String; 2] {
 
 fn render_g2_affine_to_hex(point: &<Bn256 as Engine>::G2Affine) -> [String; 4] {
     if point.is_zero() {
-        return ["0x0".to_owned(), "0x0".to_owned(), "0x0".to_owned(), "0x0".to_owned()];
+        return [
+            "0x0".to_owned(),
+            "0x0".to_owned(),
+            "0x0".to_owned(),
+            "0x0".to_owned(),
+        ];
     }
 
     let (x, y) = point.into_xy_unchecked();
@@ -106,13 +134,11 @@ fn render_g2_affine_to_hex(point: &<Bn256 as Engine>::G2Affine) -> [String; 4] {
         render_scalar_to_hex(&x.c0),
         render_scalar_to_hex(&x.c1),
         render_scalar_to_hex(&y.c0),
-        render_scalar_to_hex(&y.c1)
+        render_scalar_to_hex(&y.c1),
     ]
 }
 
-fn serialize_g1_for_ethereum(
-    point: &<Bn256 as Engine>::G1Affine
-) -> (U256, U256) {
+fn serialize_g1_for_ethereum(point: &<Bn256 as Engine>::G1Affine) -> (U256, U256) {
     if point.is_zero() {
         return (U256::zero(), U256::zero());
     }
@@ -137,7 +163,9 @@ fn serialize_fe_for_ethereum(field_element: &Fr) -> U256 {
     U256::from_big_endian(&be_bytes[..])
 }
 
-pub fn serialize_proof(proof: &Proof<Bn256, PlonkCsWidth4WithNextStepParams>) -> (Vec<U256>, Vec<U256>) {
+pub fn serialize_proof(
+    proof: &Proof<Bn256, PlonkCsWidth4WithNextStepParams>,
+) -> (Vec<U256>, Vec<U256>) {
     let mut inputs = vec![];
     for input in proof.input_values.iter() {
         inputs.push(serialize_fe_for_ethereum(&input));
@@ -170,7 +198,9 @@ pub fn serialize_proof(proof: &Proof<Bn256, PlonkCsWidth4WithNextStepParams>) ->
 
     serialized_proof.push(serialize_fe_for_ethereum(&proof.grand_product_at_z_omega));
     serialized_proof.push(serialize_fe_for_ethereum(&proof.quotient_polynomial_at_z));
-    serialized_proof.push(serialize_fe_for_ethereum(&proof.linearization_polynomial_at_z));
+    serialized_proof.push(serialize_fe_for_ethereum(
+        &proof.linearization_polynomial_at_z,
+    ));
 
     for c in proof.permutation_polynomials_at_z.iter() {
         serialized_proof.push(serialize_fe_for_ethereum(&c));
@@ -202,14 +232,17 @@ mod tests {
 
     #[test]
     fn render_simple_deposit_key_and_proof() {
-        let mut reader = std::io::BufReader::with_capacity(1<<24,
-            std::fs::File::open("./deposit_vk.key").unwrap()
+        let mut reader = std::io::BufReader::with_capacity(
+            1 << 24,
+            std::fs::File::open("./deposit_vk.key").unwrap(),
         );
-        let vk = VerificationKey::<Bn256, PlonkCsWidth4WithNextStepParams>::read(&mut reader).unwrap();
+        let vk =
+            VerificationKey::<Bn256, PlonkCsWidth4WithNextStepParams>::read(&mut reader).unwrap();
         render_verification_key(&vk, "./test.sol", "./template.sol");
 
-        let mut reader = std::io::BufReader::with_capacity(1<<24,
-            std::fs::File::open("./deposit_proof.proof").unwrap()
+        let mut reader = std::io::BufReader::with_capacity(
+            1 << 24,
+            std::fs::File::open("./deposit_proof.proof").unwrap(),
         );
         let proof = Proof::<Bn256, PlonkCsWidth4WithNextStepParams>::read(&mut reader).unwrap();
         let (inputs, proof) = serialize_proof(&proof);

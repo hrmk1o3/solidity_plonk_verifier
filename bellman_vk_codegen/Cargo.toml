@@ -5,8 +5,9 @@ authors = ["Alex Vlasov <alex.m.vlasov@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-bellman = { package = "bellman_ce", git = "https://github.com/hrmk1o3/bellman", branch = "dev" }
+# bellman = { package = "bellman_ce", git = "https://github.com/hrmk1o3/bellman", branch = "dev" }
+franklin-crypto = { git = "https://github.com/hrmk1o3/franklin-crypto", branch = "beta", features = ["multicore", "plonk"] }
 handlebars = "3.*"
 hex = "*"
 serde_json = "1.*"
-web3 = {version = "0.8.*", default_features = false }
+web3 = {version = "0.15", default_features = false }
